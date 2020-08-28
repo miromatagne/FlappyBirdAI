@@ -32,7 +32,7 @@ class Bird:
     ANIMATION_TIME = 5
 
     def __init__(self, x, y):
-        self.x = x
+        self.x = x + 20
         self.y = y
         self.tilt = 0
         self.tick_count = 0
@@ -42,15 +42,15 @@ class Bird:
         self.img = self.IMGS[0]
 
     def jump(self):
-        self.vel = -5.5
+        self.vel = -2
         self.tick_count = 0
         self.height = self.y
 
     def move(self):
         self.tick_count += 1
-        d = self.vel*self.tick_count + 1.5*self.tick_count**2
-        if d >= 16:
-            d = 16
+        d = self.vel*self.tick_count + 0.3*self.tick_count**2
+        if d >= 8:
+            d = 8
 
         if d < 0:
             d -= 2
@@ -96,7 +96,7 @@ class Pipe:
     GAP = round(WIN_HEIGHT/5)
 
     def __init__(self, x):
-        self.x = x
+        self.x = x + 30
         self.height = 0
         self.gap = 100
         self.top = 0
@@ -188,12 +188,15 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
-        # bird.move()
+            if event.type == pygame.KEYUP:
+                bird.jump()
+        bird.move()
         add_pipe = False
         rem = []
         for pipe in pipes:
             if pipe.collide(bird):
-                pass
+                print("LOSE")
+                run = False
 
             if pipe.x + pipe.PIPE_TOP.get_width() < 0:
                 rem.append(pipe)
@@ -215,12 +218,12 @@ def main():
             pass
 
         base.move()
-        draw_window(win, bird, pipes, base, score)
+        draw_window(win, [bird], pipes, base, score)
     pygame.quit()
     quit()
 
 
-def eval_genomes(genomes, config):
+def eval_genomes(genomes, config, training=True):
     nets = []
     ge = []
     birds = []
@@ -289,7 +292,6 @@ def eval_genomes(genomes, config):
             score += 1
             for g in ge:
                 g.fitness += 5
-                print(g.fitness)
             pipes.append(Pipe(WIN_WIDTH))
 
         for r in rem:
@@ -304,8 +306,7 @@ def eval_genomes(genomes, config):
         base.move()
         draw_window(win, birds, pipes, base, score)
 
-        if score > 20:
-            #pickle.dump(nets[0], open("winner.pkl", "wb"))
+        if score > 20 and training:
             break
 
 
@@ -322,7 +323,7 @@ def replay_genome(config_path, genome_path="winner.pkl"):
     genomes = [(1, genome)]
 
     # Call game with only the loaded genome
-    eval_genomes(genomes, config)
+    eval_genomes(genomes, config, False)
 
 
 def run(config_path):
@@ -339,7 +340,56 @@ def run(config_path):
         pickle.dump(winner, output)
 
 
+def menu(config_path):
+    run = True
+    BUTTON_HEIGHT = 50
+    BUTTON_WIDTH = 100
+    clock = pygame.time.Clock()
+    while run:
+        win = pygame.display.set_mode((WIN_WIDTH, WIN_HEIGHT))
+        win.blit(BG_IMG, (0, 0))
+        #text = STAT_FONT.render("Score: " + str(score), 1, (255, 255, 255))
+        mouse = pygame.mouse.get_pos()
+        click = pygame.mouse.get_pressed()
+        if WIN_WIDTH/2 + BUTTON_WIDTH/2 > mouse[0] > WIN_WIDTH/2 - BUTTON_WIDTH/2 and WIN_HEIGHT/2 + BUTTON_HEIGHT/2 > mouse[1] > WIN_HEIGHT/2 - BUTTON_HEIGHT/2:
+            pygame.draw.rect(win, (0, 0, 255),
+                             (WIN_WIDTH/2 - BUTTON_WIDTH/2, WIN_HEIGHT/2 - BUTTON_HEIGHT/2, BUTTON_WIDTH, BUTTON_HEIGHT))
+            if click[0] == 1:
+                main()
+        else:
+            pygame.draw.rect(win, (0, 255, 0),
+                             (WIN_WIDTH/2 - BUTTON_WIDTH/2, WIN_HEIGHT/2 - BUTTON_HEIGHT/2, BUTTON_WIDTH, BUTTON_HEIGHT))
+
+        if WIN_WIDTH/2 + BUTTON_WIDTH/2 > mouse[0] > WIN_WIDTH/2 - BUTTON_WIDTH/2 and WIN_HEIGHT/2 + BUTTON_HEIGHT/2 + 100 > mouse[1] > WIN_HEIGHT/2 - BUTTON_HEIGHT/2 + 100:
+            pygame.draw.rect(win, (0, 0, 255), (WIN_WIDTH/2 - BUTTON_WIDTH/2,
+                                                WIN_HEIGHT/2 - BUTTON_HEIGHT/2 + 100, BUTTON_WIDTH, BUTTON_HEIGHT))
+            if click[0] == 1:
+                replay_genome(config_path)
+        else:
+            pygame.draw.rect(win, (255, 0, 0), (WIN_WIDTH/2 - BUTTON_WIDTH/2,
+                                                WIN_HEIGHT/2 - BUTTON_HEIGHT/2 + 100, BUTTON_WIDTH, BUTTON_HEIGHT))
+
+        text = STAT_FONT.render("Play", 1, (255, 255, 255))
+        win.blit(text, (WIN_WIDTH/2 - text.get_width() /
+                        2, WIN_HEIGHT/2 - text.get_height()/2))
+
+        text = STAT_FONT.render("AI", 1, (255, 255, 255))
+        win.blit(text, (WIN_WIDTH/2 - text.get_width() /
+                        2, WIN_HEIGHT/2 - text.get_height()/2 + 100))
+
+        pygame.display.update()
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                run = False
+                pygame.quit()
+                quit()
+
+        clock.tick(15)
+
+
 if __name__ == '__main__':
     local_dir = os.path.dirname(__file__)
     config_path = os.path.join(local_dir, "config-feedforward.txt")
-    replay_genome(config_path)
+    # replay_genome(config_path)
+    # main()
+    menu(config_path)
