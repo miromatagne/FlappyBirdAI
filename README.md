@@ -8,6 +8,6 @@ The AI trains on multiple birds playing at the same time, and stores its trained
 
 Run the following command :
 
-````
+```
 python flappy_bird.py
 ```
