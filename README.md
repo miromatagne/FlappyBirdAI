@@ -2,7 +2,7 @@
 
 Flappy Bird game with an AI able to play the game.
 
-The AI trains on multiple birds playing at the same time, and stores its trained model locally.
+The AI training consists in a Feedforward Neural Network training on multiple birds playing at the same time, and the trained model is then stored locally.
 
 # Execution
 
